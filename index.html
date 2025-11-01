@@ -1,83 +1,183 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contact Form</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Job Application — Upload Resume</title>
   <style>
-    body {
-      font-family: system-ui, sans-serif;
-      background: #f4f7f9;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
+    :root{
+      --bg: #f4f7f9;
+      --card: #fff;
+      --accent: #007bff;
+      --muted: #666;
     }
-    form {
-      background: #fff;
-      padding: 24px;
-      border-radius: 16px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-      width: 90%;
-      max-width: 400px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
+    html,body{height:100%;margin:0;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg)}
+    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{background:var(--card);width:100%;max-width:520px;border-radius:12px;padding:20px;box-shadow:0 6px 20px rgba(0,0,0,0.06)}
+    h1{margin:0 0 10px;font-size:20px}
+    p.lead{margin:0 0 18px;color:var(--muted);font-size:14px}
+    label{font-size:13px;color:#333;margin-bottom:6px;display:block}
+    input[type="text"], input[type="email"], input[type="file"]{
+      width:100%;padding:12px;border:1px solid #d0d7de;border-radius:8px;font-size:15px;box-sizing:border-box;
     }
-    input, button {
-      font-size: 16px;
-      padding: 12px;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      outline: none;
-      width: 100%;
-      box-sizing: border-box;
+    input[type="file"]{padding:10px}
+    .row{display:flex;gap:10px}
+    .actions{display:flex;gap:10px;align-items:center;margin-top:14px}
+    button{
+      background:var(--accent);color:#fff;border:0;padding:12px 16px;border-radius:10px;font-weight:600;cursor:pointer;
     }
-    input:focus {
-      border-color: #007bff;
-    }
-    button {
-      background: #007bff;
-      color: #fff;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-    button:hover {
-      background: #0056d2;
-    }
-    .note {
-      text-align: center;
-      font-size: 13px;
-      color: #777;
-      margin-top: 8px;
+    button[disabled]{opacity:.6;cursor:default}
+    .status{font-size:13px;color:var(--muted);margin-top:10px}
+    .progress-wrap{margin-top:12px;background:#eee;border-radius:10px;overflow:hidden;height:12px}
+    .progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#0056d2);transition:width .2s}
+    .small{font-size:12px;color:#777;margin-top:6px}
+    @media (max-width:480px){
+      .card{padding:16px}
+      h1{font-size:18px}
     }
   </style>
 </head>
 <body>
+  <div class="wrap">
+    <div class="card" role="region" aria-label="Job application form">
+      <h1>Job Application</h1>
+      <p class="lead">Upload your resume (PDF/DOC/DOCX). You'll be redirected to a thank-you page after submission.</p>
 
-  <form action="https://formsubmit.co/sdaph1@yahoo.com" method="POST">
-    <h2 style="text-align:center;margin:0;">Contact Form</h2>
+      <form id="appForm">
+        <label for="name">Name</label>
+        <input id="name" name="name" type="text" placeholder="Your name" required>
 
-    <input type="text" name="name" placeholder="Your Name" required>
-    <input type="email" name="email" placeholder="Your Email" required>
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" placeholder="you@example.com" required>
 
-    <!-- honeypot (anti-spam) -->
-    <input type="text" name="_honey" style="display:none">
+        <label for="resume">Resume (PDF, DOC, DOCX)</label>
+        <input id="resume" name="resume" type="file" accept=".pdf,.doc,.docx" required>
 
-    <!-- disable captcha -->
-    <input type="hidden" name="_captcha" value="false">
+        <div class="progress-wrap" aria-hidden="true" style="display:none" id="progressWrap">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="small" id="percent" style="display:none">0%</div>
 
-    <!-- redirect after submit -->
-    <input type="hidden" name="_next" value="https://tcndot.github.io/f/ty.html">
+        <div class="actions">
+          <button id="submitBtn" type="submit">Submit</button>
+          <div class="status" id="statusText" aria-live="polite"></div>
+        </div>
+      </form>
+      <p class="small">Files uploaded to file.io (temporary). You will receive an email with the download link.</p>
+    </div>
+  </div>
 
-    <button type="submit">Send</button>
+  <script>
+    (function(){
+      const form = document.getElementById('appForm');
+      const resumeInput = document.getElementById('resume');
+      const submitBtn = document.getElementById('submitBtn');
+      const statusText = document.getElementById('statusText');
+      const progressWrap = document.getElementById('progressWrap');
+      const progressBar = document.getElementById('progressBar');
+      const percentText = document.getElementById('percent');
 
-    <div class="note">Powered by FormSubmit (Free)</div>
-  </form>
+      const FORM_SUBMIT_URL = 'https://formsubmit.co/sdaph1@yahoo.com';
+      const FILE_IO_UPLOAD_URL = 'https://file.io/?expires=1w'; // expires=1w (change if you want)
+      const REDIRECT_URL = 'https://tcndot.github.io/f/ty.html';
 
+      function setStatus(text){
+        statusText.textContent = text;
+      }
+      function setProgress(p){
+        progressBar.style.width = p + '%';
+        percentText.textContent = Math.round(p) + '%';
+      }
+      function disableForm(v=true){
+        submitBtn.disabled = v;
+        resumeInput.disabled = v;
+        document.getElementById('name').disabled = v;
+        document.getElementById('email').disabled = v;
+      }
+
+      form.addEventListener('submit', function(e){
+        e.preventDefault();
+        setStatus('');
+        const file = resumeInput.files[0];
+        if(!file){
+          alert('Please choose a resume file to upload.');
+          return;
+        }
+        // basic client-side size check (file.io supports up to 100MB typically)
+        const maxBytes = 100 * 1024 * 1024; // 100 MB
+        if(file.size > maxBytes){
+          alert('File is too large. Max 100 MB.');
+          return;
+        }
+
+        disableForm(true);
+        progressWrap.style.display = 'block';
+        percentText.style.display = 'block';
+        setProgress(0);
+        setStatus('Uploading resume...');
+
+        // Upload to file.io using XHR to get upload progress
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', FILE_IO_UPLOAD_URL);
+        xhr.responseType = 'json';
+
+        xhr.upload.onprogress = function(ev){
+          if(ev.lengthComputable){
+            const pct = (ev.loaded / ev.total) * 100;
+            setProgress(pct);
+          }
+        };
+
+        xhr.onload = async function(){
+          if(xhr.status >= 200 && xhr.status < 300 && xhr.response){
+            const resp = xhr.response;
+            if(resp.success && resp.link){
+              setProgress(100);
+              setStatus('Resume uploaded. Sending application...');
+              // send name,email, and resume link to FormSubmit
+              try {
+                const fd = new FormData();
+                fd.append('name', document.getElementById('name').value);
+                fd.append('email', document.getElementById('email').value);
+                fd.append('resume_link', resp.link);
+                // optional fields
+                fd.append('_captcha', 'false');
+                fd.append('_next', REDIRECT_URL);
+
+                const sendResp = await fetch(FORM_SUBMIT_URL, {
+                  method: 'POST',
+                  body: fd
+                });
+                // FormSubmit responds with a redirect when submitted from browser forms.
+                // We treat any 200-303 as success here.
+                setStatus('Submitted successfully — redirecting...');
+                setTimeout(() => { window.location.href = REDIRECT_URL; }, 1200);
+              } catch(err){
+                console.error(err);
+                setStatus('Error sending to FormSubmit. Try again.');
+                disableForm(false);
+              }
+            } else {
+              setStatus('Upload failed (no link). Try again.');
+              disableForm(false);
+            }
+          } else {
+            console.error('Upload failed', xhr.status, xhr.response);
+            setStatus('Upload failed. Try again.');
+            disableForm(false);
+          }
+        };
+
+        xhr.onerror = function(){
+          setStatus('Network error during upload. Check connection.');
+          disableForm(false);
+        };
+
+        const upForm = new FormData();
+        upForm.append('file', file);
+        xhr.send(upForm);
+      });
+    })();
+  </script>
 </body>
 </html>
-
