@@ -27,10 +27,10 @@
     @media (max-width:520px){.card{padding:16px}}
   </style>
 
-  <!-- Uploadcare widget: public key inserted below -->
+  <!-- Uploadcare widget: your public key is already inserted -->
   <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js"></script>
   <script>
-    UPLOADCARE_PUBLIC_KEY = 'cabc0d1e791242b11bbe'; // your public key
+    UPLOADCARE_PUBLIC_KEY = 'cabc0d1e791242b11bbe';
     uploadcare.start({ publicKey: UPLOADCARE_PUBLIC_KEY });
   </script>
 </head>
@@ -49,14 +49,13 @@
 
         <div class="widget-row">
           <label for="ucInput">Resume (PDF / DOC / DOCX)</label>
-          <!-- Uploadcare widget input: it will open a file picker when clicked -->
+          <!-- Uploadcare widget input -->
           <input id="ucInput" type="hidden" role="uploadcare-uploader"
                  data-public-key="cabc0d1e791242b11bbe"
-                 data-tabs="file url"  <!-- allow local file upload and URL paste -->
+                 data-tabs="file url"
                  data-images-only="false"
                  data-multiple="false"
-                 data-validators="maxSize:52428800"
-                 />
+                 data-validators="maxSize:52428800" />
         </div>
 
         <div class="file-info" id="fileInfo" aria-live="polite" style="display:none">
@@ -83,7 +82,7 @@
     const REDIRECT_URL = 'https://tcndot.github.io/f/ty.html';
 
     const form = document.getElementById('appForm');
-    const widgetInput = uploadcare.Widget('#ucInput');
+    const widget = uploadcare.Widget('#ucInput');
     const statusText = document.getElementById('statusText');
     const progressWrap = document.getElementById('progressWrap');
     const progressBar = document.getElementById('progressBar');
@@ -91,30 +90,133 @@
     const fileNameSpan = document.getElementById('fileName');
     const submitBtn = document.getElementById('submitBtn');
 
-    // show selected file name when user picks file (immediate)
-    widgetInput.onChange(function(filePromise){
+    // Keep track of the last selected file promise and the CDN url if available
+    let lastFilePromise = null;
+    let lastCdnUrl = null;
+    let lastFileName = '';
+
+    // When user selects a file, widget.onChange provides a "file promise" (or null)
+    widget.onChange(function(filePromise){
+      lastFilePromise = filePromise;
+      lastCdnUrl = null;
+      lastFileName = '';
       fileInfo.style.display = 'none';
       fileNameSpan.textContent = '';
+
       if(!filePromise) return;
-      // filePromise may be a File or a Promise; handle both
+
+      // filePromise may be:
+      // - already resolved fileInfo object (with cdnUrl),
+      // - or a promise that will resolve when upload completes.
+      // Handle both cases safely:
       Promise.resolve(filePromise).then(function(file){
-        if(!file || !file.name) return;
-        fileInfo.style.display = 'block';
-        fileNameSpan.textContent = file.name || file.uuid || 'uploaded file';
+        // file may be a fileInfo-like object or an object with .promise()
+        if(!file) return;
+        // If file has a name, display it immediately
+        if(file.name) {
+          lastFileName = file.name;
+          fileInfo.style.display = 'block';
+          fileNameSpan.textContent = lastFileName;
+        } else if(file.cdnUrl && file.originalUrl) {
+          // fallback naming
+          fileInfo.style.display = 'block';
+          fileNameSpan.textContent = file.cdnUrl;
+        }
+
+        // If cdnUrl already present, capture it
+        if(file.cdnUrl){
+          lastCdnUrl = file.cdnUrl;
+          return;
+        }
+
+        // Otherwise the file object may expose .promise() that resolves to final fileInfo
+        // Use .promise() when available
+        if(typeof file.promise === 'function'){
+          // show progress indicator (Uploadcare widget shows own progress too)
+          progressWrap.style.display = 'block';
+          // file.progress is not guaranteed, but file.promise resolves to final info
+          file.promise().then(function(finalInfo){
+            if(finalInfo && finalInfo.cdnUrl){
+              lastCdnUrl = finalInfo.cdnUrl;
+            }
+            if(finalInfo && finalInfo.name){
+              lastFileName = finalInfo.name;
+              fileInfo.style.display = 'block';
+              fileNameSpan.textContent = lastFileName;
+            }
+            progressBar.style.width = '100%';
+            setTimeout(()=> { progressWrap.style.display='none'; progressBar.style.width='0%'; }, 600);
+          }).catch(function(err){
+            console.warn('Uploadcare file promise error', err);
+          });
+        }
+      }).catch(function(err){
+        console.warn('widget onChange resolve error', err);
       });
     });
 
-    // helper to set status and progress
+    // helper UI functions
     function setStatus(text){ statusText.textContent = text; }
     function setProgress(p){
       progressBar.style.width = p + '%';
-      progressWrap.style.display = (p > 0 && p < 100) ? 'block' : (p >= 100 ? 'block' : 'none');
-      if(p >= 100){ setTimeout(()=> progressWrap.style.display='none', 600); }
+      progressWrap.style.display = (p>0 && p<100) ? 'block' : (p>=100 ? 'block' : 'none');
+      if(p>=100){ setTimeout(()=> progressWrap.style.display='none', 600); }
     }
     function disableForm(v=true){
       submitBtn.disabled = v;
       document.getElementById('name').disabled = v;
       document.getElementById('email').disabled = v;
+    }
+
+    // Utility: ensure we obtain a CDN URL for the selected file.
+    // Returns a Promise<string> that resolves to the CDN URL.
+    function ensureCdnUrl(){
+      return new Promise((resolve, reject) => {
+        // If we already captured the cdn url, return it.
+        if(lastCdnUrl) return resolve(lastCdnUrl);
+
+        if(!lastFilePromise){
+          return reject(new Error('No file selected'));
+        }
+
+        // lastFilePromise may be a promise or final file info object
+        Promise.resolve(lastFilePromise).then(function(file){
+          if(!file) return reject(new Error('Invalid file promise'));
+          // If file already has cdnUrl
+          if(file.cdnUrl) {
+            lastCdnUrl = file.cdnUrl;
+            return resolve(lastCdnUrl);
+          }
+          // If file supports .promise(), wait for it
+          if(typeof file.promise === 'function'){
+            setStatus('Uploading to Uploadcare...');
+            file.promise().then(function(finalInfo){
+              if(finalInfo && finalInfo.cdnUrl){
+                lastCdnUrl = finalInfo.cdnUrl;
+                if(finalInfo.name){
+                  lastFileName = finalInfo.name;
+                  fileInfo.style.display = 'block';
+                  fileNameSpan.textContent = lastFileName;
+                }
+                setProgress(100);
+                resolve(lastCdnUrl);
+              } else {
+                reject(new Error('Uploadcare returned no cdnUrl'));
+              }
+            }).catch(function(err){
+              reject(err || new Error('Uploadcare upload failed'));
+            });
+          } else {
+            // If no .promise(), maybe file is already final info object but without cdnUrl
+            // Try other properties
+            if(file.cdnUrl) { lastCdnUrl = file.cdnUrl; return resolve(lastCdnUrl); }
+            if(file.originalUrl) { lastCdnUrl = file.originalUrl; return resolve(lastCdnUrl); }
+            reject(new Error('Cannot obtain CDN URL from widget'));
+          }
+        }).catch(function(err){
+          reject(err || new Error('Failed to resolve file promise'));
+        });
+      });
     }
 
     form.addEventListener('submit', async function(e){
@@ -126,32 +228,19 @@
       const email = document.getElementById('email').value.trim();
       if(!name || !email){ alert('Please enter name and email'); return; }
 
-      // ensure a file selected
-      const widgetValue = widgetInput.value();
-      if(!widgetValue){
-        alert('Please select a resume file first.');
-        return;
-      }
-
       disableForm(true);
-      setStatus('Uploading to Uploadcare...');
+      setStatus('Preparing upload...');
 
       try {
-        // widgetInput.uploadProgress(file) is not provided; use the file promise and then start uploading
-        const file = await widgetInput.upload(); // uploads and resolves to fileInfo
-        // uploadcare's promise resolves to fileInfo object
-        // file.cdnUrl is the CDN link; file.name is filename
-        const cdnUrl = file.cdnUrl || file.cdn_url || file.originalUrl || file.original_url || null;
-        const filename = file.name || file.uuid || '';
+        // Ensure file is uploaded and we have a CDN URL
+        const cdnUrl = await ensureCdnUrl();
 
         if(!cdnUrl){
-          throw new Error('No CDN URL returned by Uploadcare');
+          throw new Error('No file URL obtained');
         }
 
-        setProgress(100);
         setStatus('Upload complete. Sending application...');
 
-        // Post to FormSubmit using FormData so redirect works and FormSubmit receives fields
         const fd = new FormData();
         fd.append('name', name);
         fd.append('email', email);
@@ -159,9 +248,10 @@
         fd.append('_captcha', 'false');
         fd.append('_next', REDIRECT_URL);
 
-        const resp = await fetch(FORM_SUBMIT_URL, { method: 'POST', body: fd });
-        // treat as success if fetch doesn't throw
+        await fetch(FORM_SUBMIT_URL, { method: 'POST', body: fd });
+
         setStatus('Submitted — redirecting...');
+        setProgress(100);
         setTimeout(()=> window.location.href = REDIRECT_URL, 900);
 
       } catch(err){
@@ -170,6 +260,7 @@
         disableForm(false);
       }
     });
+
   })();
   </script>
 </body>
