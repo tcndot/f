@@ -82,6 +82,9 @@
     font-weight: 700;
     color: green;
   }
+  #otherQualificationContainer {
+    display: none;
+  }
   @media (max-width: 540px) {
     .form-container {
       margin: 15px;
@@ -105,8 +108,25 @@
     <label for="phone">Phone Number *</label>
     <input type="tel" id="phone" name="phone" placeholder="+91 98765 43210" required pattern="^\+?\d{7,15}$" title="Enter a valid phone number" />
 
+    <label for="dob">Date of Birth *</label>
+    <input type="date" id="dob" name="dob" required max="" />
+
     <label for="position">Position Applied For</label>
     <input type="text" id="fixedPosition" name="position" value="Sales Representative" readonly style="background:#eee; cursor: not-allowed;" />
+
+    <label for="qualification">Highest Qualification *</label>
+    <select id="qualification" name="qualification" required>
+      <option value="" disabled selected>Select highest qualification</option>
+      <option value="10th Pass">10th Pass / Secondary School</option>
+      <option value="12th Pass">12th Pass / Higher Secondary</option>
+      <option value="Diploma">Diploma / Vocational Training</option>
+      <option value="Graduate">Graduate</option>
+      <option value="Postgraduate">Postgraduate</option>
+      <option value="Other">Other</option>
+    </select>
+    <div id="otherQualificationContainer">
+      <input type="text" id="otherQualification" name="otherQualification" placeholder="Please specify other qualification" />
+    </div>
 
     <label for="resume">Upload Resume (pdf, docx, jpeg, png) *</label>
     <input 
@@ -137,6 +157,33 @@
   const submitBtn = document.getElementById('submitBtn');
   const consentCheckbox = document.getElementById('consent');
   const confirmationMessage = document.getElementById('confirmationMessage');
+  const qualificationSelect = document.getElementById('qualification');
+  const otherQualificationContainer = document.getElementById('otherQualificationContainer');
+  const otherQualificationInput = document.getElementById('otherQualification');
+  const dobInput = document.getElementById('dob');
+
+  // Set max date for DOB to ensure age >=18
+  function setMaxDOB() {
+    const today = new Date();
+    today.setFullYear(today.getFullYear() - 18);
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    dobInput.max = `${yyyy}-${mm}-${dd}`;
+  }
+  setMaxDOB();
+
+  // Show/hide other qualification input based on select
+  qualificationSelect.addEventListener('change', () => {
+    if (qualificationSelect.value === 'Other') {
+      otherQualificationContainer.style.display = 'block';
+      otherQualificationInput.required = true;
+    } else {
+      otherQualificationContainer.style.display = 'none';
+      otherQualificationInput.required = false;
+      otherQualificationInput.value = '';
+    }
+  });
 
   consentCheckbox.addEventListener('change', () => {
     submitBtn.disabled = !consentCheckbox.checked;
@@ -144,11 +191,23 @@
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
+
     if (!form.checkValidity()) {
       form.reportValidity();
       return;
     }
 
+    // Additional check for DOB age if needed (browser might not fully enforce max)
+    const dobDate = new Date(dobInput.value);
+    const cutoffDate = new Date();
+    cutoffDate.setFullYear(cutoffDate.getFullYear() - 18);
+    if (dobDate > cutoffDate) {
+      alert('You must be at least 18 years old to apply.');
+      dobInput.focus();
+      return;
+    }
+
+    // Uploadcare file validation
     const uploadcareWidget = uploadcare.Widget('[role=uploadcare-uploader]');
     const fileInfo = uploadcareWidget.value();
 
@@ -161,18 +220,23 @@
       const fileData = await fileInfo.promise();
       const fileUrl = fileData.cdnUrl;
 
+      // Compose form data with otherQualification if relevant
+      const qualificationValue = qualificationSelect.value === 'Other' ? otherQualificationInput.value.trim() : qualificationSelect.value;
+
       const formData = {
         fullName: form.fullName.value.trim(),
         email: form.email.value.trim(),
         phone: form.phone.value.trim(),
+        dob: dobInput.value,
         position: form.position.value.trim(),
+        qualification: qualificationValue,
         resumeUrl: fileUrl,
         coverLetter: form.coverLetter.value.trim(),
         consentGiven: form.consent.checked
       };
 
-      // TODO: Implement backend submission logic here sending formData to
-      // only: sdadevelopers99+jobapplications@hotmail.com
+      // Await backend submission here (not implemented) to:
+      // sdadevelopers99+jobapplications@hotmail.com
 
       setTimeout(() => {
         confirmationMessage.textContent = "Your form has been submitted. We have received your details and will contact you as soon as possible.";
@@ -180,6 +244,7 @@
         submitBtn.style.display = "none";
         form.reset();
         submitBtn.disabled = true;
+        otherQualificationContainer.style.display = 'none';
       }, 1000);
 
     } catch (error) {
