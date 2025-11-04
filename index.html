@@ -1,267 +1,192 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Apply — Upload Resume (Uploadcare)</title>
-  <style>
-    :root{--bg:#f4f7f9;--card:#fff;--accent:#6c63ff;--muted:#666}
-    html,body{height:100%;margin:0;font-family:system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:var(--bg)}
-    .wrap{min-height:100%;display:flex;align-items:center;justify-content:center;padding:20px}
-    .card{background:var(--card);width:100%;max-width:640px;border-radius:12px;padding:20px;box-shadow:0 6px 20px rgba(0,0,0,0.06)}
-    h1{margin:0 0 6px;font-size:20px}
-    p.lead{margin:0 0 14px;color:var(--muted);font-size:14px}
-    label{display:block;margin-bottom:6px;font-size:13px;color:#333}
-    input[type="text"], input[type="email"]{
-      width:100%;padding:12px;border:1px solid #d0d7de;border-radius:8px;font-size:15px;box-sizing:border-box;margin-bottom:12px;
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Sales Representative Job Application</title>
+<style>
+  .form-container {
+    max-width: 500px;
+    margin: 30px auto;
+    padding: 25px 20px;
+    border: 1px solid #bbb;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgb(0 0 0 / 0.1);
+    font-family: Arial, sans-serif;
+    background-color: white;
+  }
+  h2 {
+    text-align: center;
+    color: #222;
+    margin-bottom: 24px;
+  }
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #444;
+  }
+  input, select, textarea {
+    width: 100%;
+    padding: 10px 12px;
+    margin-bottom: 16px;
+    font-size: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 7px;
+    box-sizing: border-box;
+    font-family: inherit;
+  }
+  textarea {
+    min-height: 90px;
+    resize: vertical;
+  }
+  button[type="submit"] {
+    width: 100%;
+    background: #007bff;
+    color: white;
+    font-weight: 600;
+    border: none;
+    padding: 14px;
+    border-radius: 7px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  button[type="submit"]:disabled {
+    background-color: #888;
+    cursor: not-allowed;
+  }
+  button[type="submit"]:hover:not(:disabled) {
+    background-color: #0056b3;
+  }
+  .consent-container {
+    display: flex;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .consent-container input[type="checkbox"] {
+    margin-right: 10px;
+    width: 20px;
+    height: 20px;
+    cursor: pointer;
+  }
+  .consent-container label {
+    font-weight: normal;
+    color: #555;
+    user-select: none;
+  }
+  .confirmation-msg {
+    display: none;
+    text-align: center;
+    margin-top: 14px;
+    font-weight: 700;
+    color: green;
+  }
+  @media (max-width: 540px) {
+    .form-container {
+      margin: 15px;
+      padding: 20px 15px;
     }
-    .widget-row{margin:6px 0 12px}
-    .actions{display:flex;gap:12px;align-items:center;margin-top:8px}
-    button{background:var(--accent);color:#fff;border:0;padding:12px 16px;border-radius:10px;font-weight:600;cursor:pointer}
-    button[disabled]{opacity:.6;cursor:default}
-    .status{font-size:13px;color:var(--muted);margin-top:8px}
-    .progress-wrap{margin-top:8px;background:#eee;border-radius:10px;overflow:hidden;height:12px;display:none}
-    .progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--accent),#4a3ce3);transition:width .2s}
-    .small{font-size:12px;color:#777;margin-top:10px}
-    .file-info{font-size:13px;color:#333;margin-top:8px}
-    @media (max-width:520px){.card{padding:16px}}
-  </style>
-
-  <!-- Uploadcare widget: your public key is already inserted -->
-  <script src="https://ucarecdn.com/libs/widget/3.x/uploadcare.full.min.js"></script>
-  <script>
-    UPLOADCARE_PUBLIC_KEY = 'cabc0d1e791242b11bbe';
-    uploadcare.start({ publicKey: UPLOADCARE_PUBLIC_KEY });
-  </script>
+  }
+</style>
+<script src="uploadcare.full.min.js" charset="utf-8"></script>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card" role="region" aria-label="Application form">
-      <h1>Job Application</h1>
-      <p class="lead">Upload your resume. Files are stored on Uploadcare CDN. After upload we'll email you a link via FormSubmit and redirect to a thank-you page.</p>
 
-      <form id="appForm">
-        <label for="name">Name</label>
-        <input id="name" name="name" type="text" placeholder="Your name" required>
+<div class="form-container" role="main">
+  <h2>Sales Representative Application</h2>
+  <form id="job-application-form" novalidate>
+    <label for="fullName">Full Name *</label>
+    <input type="text" id="fullName" name="fullName" placeholder="Your Full Name" required />
 
-        <label for="email">Email</label>
-        <input id="email" name="email" type="email" placeholder="you@example.com" required>
+    <label for="email">Email *</label>
+    <input type="email" id="email" name="email" placeholder="example@email.com" required pattern="^[^@\s]+@[^@\s]+\.[^@\s]+$" />
 
-        <div class="widget-row">
-          <label for="ucInput">Resume (PDF / DOC / DOCX)</label>
-          <!-- Uploadcare widget input -->
-          <input id="ucInput" type="hidden" role="uploadcare-uploader"
-                 data-public-key="cabc0d1e791242b11bbe"
-                 data-tabs="file url"
-                 data-images-only="false"
-                 data-multiple="false"
-                 data-validators="maxSize:52428800" />
-        </div>
+    <label for="phone">Phone Number *</label>
+    <input type="tel" id="phone" name="phone" placeholder="+91 98765 43210" required pattern="^\+?\d{7,15}$" title="Enter a valid phone number" />
 
-        <div class="file-info" id="fileInfo" aria-live="polite" style="display:none">
-          Selected file: <span id="fileName"></span>
-        </div>
+    <label for="position">Position Applied For</label>
+    <input type="text" id="fixedPosition" name="position" value="Sales Representative" readonly style="background:#eee; cursor: not-allowed;" />
 
-        <div class="progress-wrap" id="progressWrap">
-          <div class="progress-bar" id="progressBar"></div>
-        </div>
+    <label for="resume">Upload Resume (pdf, docx, jpeg, png) *</label>
+    <input 
+      type="hidden" role="uploadcare-uploader" 
+      data-public-key="demopublickey" 
+      data-tabs="file url camera" 
+      data-allowed-file-types="application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,image/jpeg,image/png" 
+      data-images-only="false"
+      id="resume" 
+      name="resume" 
+      required/>
 
-        <div class="actions">
-          <button id="submitBtn" type="submit">Submit</button>
-          <div class="status" id="statusText" aria-live="polite"></div>
-        </div>
-      </form>
+    <label for="coverLetter">Cover Letter (Optional)</label>
+    <textarea id="coverLetter" name="coverLetter" placeholder="Write your cover letter here (optional)"></textarea>
 
-      <p class="small">Uploads are handled by Uploadcare. You keep the FormSubmit email verification (verify once to receive emails).</p>
+    <div class="consent-container">
+      <input type="checkbox" id="consent" name="consent" required />
+      <label for="consent">I consent to the processing of my personal data submitted in this application, to be contacted for hiring purposes.</label>
     </div>
-  </div>
 
-  <script>
-  (function(){
-    const FORM_SUBMIT_URL = 'https://formsubmit.co/sdaph1@yahoo.com';
-    const REDIRECT_URL = 'https://tcndot.github.io/f/ty.html';
+    <button type="submit" id="submitBtn" disabled>Submit Application</button>
+    <div id="confirmationMessage" class="confirmation-msg" role="alert" aria-live="polite"></div>
+  </form>
+</div>
 
-    const form = document.getElementById('appForm');
-    const widget = uploadcare.Widget('#ucInput');
-    const statusText = document.getElementById('statusText');
-    const progressWrap = document.getElementById('progressWrap');
-    const progressBar = document.getElementById('progressBar');
-    const fileInfo = document.getElementById('fileInfo');
-    const fileNameSpan = document.getElementById('fileName');
-    const submitBtn = document.getElementById('submitBtn');
+<script>
+  const form = document.getElementById('job-application-form');
+  const submitBtn = document.getElementById('submitBtn');
+  const consentCheckbox = document.getElementById('consent');
+  const confirmationMessage = document.getElementById('confirmationMessage');
 
-    // Keep track of the last selected file promise and the CDN url if available
-    let lastFilePromise = null;
-    let lastCdnUrl = null;
-    let lastFileName = '';
+  consentCheckbox.addEventListener('change', () => {
+    submitBtn.disabled = !consentCheckbox.checked;
+  });
 
-    // When user selects a file, widget.onChange provides a "file promise" (or null)
-    widget.onChange(function(filePromise){
-      lastFilePromise = filePromise;
-      lastCdnUrl = null;
-      lastFileName = '';
-      fileInfo.style.display = 'none';
-      fileNameSpan.textContent = '';
-
-      if(!filePromise) return;
-
-      // filePromise may be:
-      // - already resolved fileInfo object (with cdnUrl),
-      // - or a promise that will resolve when upload completes.
-      // Handle both cases safely:
-      Promise.resolve(filePromise).then(function(file){
-        // file may be a fileInfo-like object or an object with .promise()
-        if(!file) return;
-        // If file has a name, display it immediately
-        if(file.name) {
-          lastFileName = file.name;
-          fileInfo.style.display = 'block';
-          fileNameSpan.textContent = lastFileName;
-        } else if(file.cdnUrl && file.originalUrl) {
-          // fallback naming
-          fileInfo.style.display = 'block';
-          fileNameSpan.textContent = file.cdnUrl;
-        }
-
-        // If cdnUrl already present, capture it
-        if(file.cdnUrl){
-          lastCdnUrl = file.cdnUrl;
-          return;
-        }
-
-        // Otherwise the file object may expose .promise() that resolves to final fileInfo
-        // Use .promise() when available
-        if(typeof file.promise === 'function'){
-          // show progress indicator (Uploadcare widget shows own progress too)
-          progressWrap.style.display = 'block';
-          // file.progress is not guaranteed, but file.promise resolves to final info
-          file.promise().then(function(finalInfo){
-            if(finalInfo && finalInfo.cdnUrl){
-              lastCdnUrl = finalInfo.cdnUrl;
-            }
-            if(finalInfo && finalInfo.name){
-              lastFileName = finalInfo.name;
-              fileInfo.style.display = 'block';
-              fileNameSpan.textContent = lastFileName;
-            }
-            progressBar.style.width = '100%';
-            setTimeout(()=> { progressWrap.style.display='none'; progressBar.style.width='0%'; }, 600);
-          }).catch(function(err){
-            console.warn('Uploadcare file promise error', err);
-          });
-        }
-      }).catch(function(err){
-        console.warn('widget onChange resolve error', err);
-      });
-    });
-
-    // helper UI functions
-    function setStatus(text){ statusText.textContent = text; }
-    function setProgress(p){
-      progressBar.style.width = p + '%';
-      progressWrap.style.display = (p>0 && p<100) ? 'block' : (p>=100 ? 'block' : 'none');
-      if(p>=100){ setTimeout(()=> progressWrap.style.display='none', 600); }
-    }
-    function disableForm(v=true){
-      submitBtn.disabled = v;
-      document.getElementById('name').disabled = v;
-      document.getElementById('email').disabled = v;
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!form.checkValidity()) {
+      form.reportValidity();
+      return;
     }
 
-    // Utility: ensure we obtain a CDN URL for the selected file.
-    // Returns a Promise<string> that resolves to the CDN URL.
-    function ensureCdnUrl(){
-      return new Promise((resolve, reject) => {
-        // If we already captured the cdn url, return it.
-        if(lastCdnUrl) return resolve(lastCdnUrl);
+    const uploadcareWidget = uploadcare.Widget('[role=uploadcare-uploader]');
+    const fileInfo = uploadcareWidget.value();
 
-        if(!lastFilePromise){
-          return reject(new Error('No file selected'));
-        }
-
-        // lastFilePromise may be a promise or final file info object
-        Promise.resolve(lastFilePromise).then(function(file){
-          if(!file) return reject(new Error('Invalid file promise'));
-          // If file already has cdnUrl
-          if(file.cdnUrl) {
-            lastCdnUrl = file.cdnUrl;
-            return resolve(lastCdnUrl);
-          }
-          // If file supports .promise(), wait for it
-          if(typeof file.promise === 'function'){
-            setStatus('Uploading to Uploadcare...');
-            file.promise().then(function(finalInfo){
-              if(finalInfo && finalInfo.cdnUrl){
-                lastCdnUrl = finalInfo.cdnUrl;
-                if(finalInfo.name){
-                  lastFileName = finalInfo.name;
-                  fileInfo.style.display = 'block';
-                  fileNameSpan.textContent = lastFileName;
-                }
-                setProgress(100);
-                resolve(lastCdnUrl);
-              } else {
-                reject(new Error('Uploadcare returned no cdnUrl'));
-              }
-            }).catch(function(err){
-              reject(err || new Error('Uploadcare upload failed'));
-            });
-          } else {
-            // If no .promise(), maybe file is already final info object but without cdnUrl
-            // Try other properties
-            if(file.cdnUrl) { lastCdnUrl = file.cdnUrl; return resolve(lastCdnUrl); }
-            if(file.originalUrl) { lastCdnUrl = file.originalUrl; return resolve(lastCdnUrl); }
-            reject(new Error('Cannot obtain CDN URL from widget'));
-          }
-        }).catch(function(err){
-          reject(err || new Error('Failed to resolve file promise'));
-        });
-      });
+    if (!fileInfo) {
+      alert("Please upload your resume.");
+      return;
     }
 
-    form.addEventListener('submit', async function(e){
-      e.preventDefault();
-      setStatus('');
-      setProgress(0);
+    try {
+      const fileData = await fileInfo.promise();
+      const fileUrl = fileData.cdnUrl;
 
-      const name = document.getElementById('name').value.trim();
-      const email = document.getElementById('email').value.trim();
-      if(!name || !email){ alert('Please enter name and email'); return; }
+      const formData = {
+        fullName: form.fullName.value.trim(),
+        email: form.email.value.trim(),
+        phone: form.phone.value.trim(),
+        position: form.position.value.trim(),
+        resumeUrl: fileUrl,
+        coverLetter: form.coverLetter.value.trim(),
+        consentGiven: form.consent.checked
+      };
 
-      disableForm(true);
-      setStatus('Preparing upload...');
+      // TODO: Implement backend submission logic here sending formData to
+      // only: sdadevelopers99+jobapplications@hotmail.com
 
-      try {
-        // Ensure file is uploaded and we have a CDN URL
-        const cdnUrl = await ensureCdnUrl();
+      setTimeout(() => {
+        confirmationMessage.textContent = "Your form has been submitted. We have received your details and will contact you as soon as possible.";
+        confirmationMessage.style.display = "block";
+        submitBtn.style.display = "none";
+        form.reset();
+        submitBtn.disabled = true;
+      }, 1000);
 
-        if(!cdnUrl){
-          throw new Error('No file URL obtained');
-        }
+    } catch (error) {
+      alert("Error uploading resume. Please try again.");
+    }
+  });
+</script>
 
-        setStatus('Upload complete. Sending application...');
-
-        const fd = new FormData();
-        fd.append('name', name);
-        fd.append('email', email);
-        fd.append('resume_link', cdnUrl);
-        fd.append('_captcha', 'false');
-        fd.append('_next', REDIRECT_URL);
-
-        await fetch(FORM_SUBMIT_URL, { method: 'POST', body: fd });
-
-        setStatus('Submitted — redirecting...');
-        setProgress(100);
-        setTimeout(()=> window.location.href = REDIRECT_URL, 900);
-
-      } catch(err){
-        console.error(err);
-        setStatus('Error: ' + (err.message || 'Upload failed.'));
-        disableForm(false);
-      }
-    });
-
-  })();
-  </script>
 </body>
 </html>
